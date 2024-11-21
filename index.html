@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grafik Volume Air</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Grafik Volume Air Terisi Seiring Waktu</h1>
+    <canvas id="volumeChart" width="800" height="400"></canvas>
+    <script>
+        // Parameter Diketahui
+        const volumeBak = 4400; // dalam liter
+        const tekananPompaPa = 249504.087786543678; // dalam Pascal
+        const diameterPipa = 2 * 0.0254; // meter
+        const panjangPipaMax = 31; // meter
+        const densitasAir = 1000; // kg/m^3
+        const g = 9.8; // m/s^2
+        const ketinggianTedmond = 20; // meter
+        let panjangPipa = 1; // meter
+        let tekananEfektif = tekananPompaPa;
+        const radiusPipa = diameterPipa / 2;
+        const luasPenampang = Math.PI * radiusPipa ** 2;
+        const faktorGesekan = 0.00256 / 1000;
+
+        // Simulasi penurunan tekanan akibat gesekan
+        while (panjangPipa < panjangPipaMax) {
+            const penurunanTekananGesekan = faktorGesekan * (panjangPipa * tekananEfektif / diameterPipa);
+            tekananEfektif -= penurunanTekananGesekan;
+            panjangPipa += 0.1;
+        }
+
+        // Tekanan Efektif akhir
+        tekananEfektif -= densitasAir * g * ketinggianTedmond;
+
+        // Kecepatan Aliran dan Debit
+        const kecepatanAliran = Math.sqrt((2 * tekananEfektif) / densitasAir);
+        const debitAliran = kecepatanAliran * luasPenampang; // m^3/s
+
+        // Perhitungan Volume dan Waktu
+        let volumeTerisi = 0; // dalam liter
+        let waktu = 0; // dalam detik
+        const timeSteps = [];
+        const volumes = [];
+
+        while (volumeTerisi < volumeBak) {
+            volumeTerisi += debitAliran * 1000; // liter per detik
+            timeSteps.push(waktu);
+            volumes.push(volumeTerisi);
+            waktu++;
+        }
+
+        // Konversi waktu
+        const waktuMenit = (waktu / 60).toFixed(2);
+        const waktuJam = (waktu / 3600).toFixed(2);
+
+        console.log(`Waktu yang diperlukan untuk mengisi bak: ${waktu} detik (${waktuMenit} menit / ${waktuJam} jam)`);
+
+        // Plotting dengan Chart.js
+        const ctx = document.getElementById('volumeChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: timeSteps,
+                datasets: [{
+                    label: 'Volume Air Terisi (liter)',
+                    data: volumes,
+                    borderColor: 'blue',
+                    borderWidth: 2,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Waktu (detik)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Volume (liter)'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Grafik Volume Air Terisi Seiring Waktu'
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
